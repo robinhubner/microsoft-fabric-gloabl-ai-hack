@@ -1,0 +1,1 @@
+# microsoft-fabric-gloabl-ai-hack
