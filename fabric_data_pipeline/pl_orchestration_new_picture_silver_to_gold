@@ -1,0 +1,27 @@
+{
+    "name": "pl_orchestration_new_picture_silver_to_gold",
+    "objectId": "20377a86-faca-4b30-a01d-100304b40a6a",
+    "properties": {
+        "activities": [
+            {
+                "name": "silver_to_gold",
+                "type": "TridentNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "65e1dcc6-a66f-4520-8c7d-5d60f86a3198",
+                    "workspaceId": "fdfff593-8f92-41e5-8d45-3feaecd27daa"
+                }
+            }
+        ],
+        "annotations": [],
+        "lastModifiedByObjectId": "db698898-2170-47ef-88fc-29f390975939",
+        "lastPublishTime": "2024-02-07T22:23:48Z"
+    }
+}

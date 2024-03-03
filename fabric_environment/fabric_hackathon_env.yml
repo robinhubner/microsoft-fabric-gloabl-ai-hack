@@ -1,0 +1,4 @@
+dependencies:
+  - pip:
+      - azure-search-documents==11.4.0
+      - openai==1.12.0

@@ -1,0 +1,129 @@
+{
+    "name": "pl_orchestration_new_picture_main",
+    "objectId": "2432b5b8-4419-454f-929d-93ff95bec979",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get all URLs from directory",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "fieldList": [
+                        "childItems"
+                    ],
+                    "datasetSettings": {
+                        "annotations": [],
+                        "type": "Binary",
+                        "typeProperties": {
+                            "location": {
+                                "type": "AzureBlobFSLocation",
+                                "fileSystem": "images"
+                            }
+                        },
+                        "externalReferences": {
+                            "connection": "108983ef-5fdc-42e0-ab4b-1ecc004ab67f"
+                        }
+                    },
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "BinaryReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "Filter only images",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "Get all URLs from directory",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get all URLs from directory').output.childItems",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@or(and(equals(item().type,'File'),endswith(item().name,'.jpg')),and(equals(item().type,'File'),endswith(item().name,'.png')))",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Continue processing if image exist",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Filter only images",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@greater(activity('Filter only images').output.FilteredItemsCount,0)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [],
+                    "ifTrueActivities": [
+                        {
+                            "name": "bronze_to_silver",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "774cd7b4-84a8-4474-b95a-6a466d406eb0",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true
+                            }
+                        },
+                        {
+                            "name": "silver_to_gold",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [
+                                {
+                                    "activity": "bronze_to_silver",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "20377a86-faca-4b30-a01d-100304b40a6a",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "annotations": [],
+        "lastModifiedByObjectId": "db698898-2170-47ef-88fc-29f390975939",
+        "lastPublishTime": "2024-02-27T09:28:35Z"
+    }
+}

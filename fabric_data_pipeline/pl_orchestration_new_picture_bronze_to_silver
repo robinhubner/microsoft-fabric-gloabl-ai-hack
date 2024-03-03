@@ -1,0 +1,236 @@
+{
+    "name": "pl_orchestration_new_picture_bronze_to_silver",
+    "objectId": "774cd7b4-84a8-4474-b95a-6a466d406eb0",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get all URLs from directory",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "fieldList": [
+                        "childItems"
+                    ],
+                    "datasetSettings": {
+                        "annotations": [],
+                        "type": "Binary",
+                        "typeProperties": {
+                            "location": {
+                                "type": "AzureBlobFSLocation",
+                                "fileSystem": "images"
+                            }
+                        },
+                        "externalReferences": {
+                            "connection": "108983ef-5fdc-42e0-ab4b-1ecc004ab67f"
+                        }
+                    },
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "BinaryReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "Execute notebook for each image",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Filter only images",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Filter only images').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": false,
+                    "batchCount": 1,
+                    "activities": [
+                        {
+                            "name": "bronze_to_silver",
+                            "type": "TridentNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "notebookId": "62b995c2-71be-4b01-a89a-a11ad6e5be4a",
+                                "workspaceId": "fdfff593-8f92-41e5-8d45-3feaecd27daa",
+                                "parameters": {
+                                    "image_file_name": {
+                                        "value": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Copy data into subdirectory",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "source": {
+                                    "type": "BinarySource",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSReadSettings",
+                                        "recursive": false
+                                    },
+                                    "formatSettings": {
+                                        "type": "BinaryReadSettings"
+                                    },
+                                    "datasetSettings": {
+                                        "annotations": [],
+                                        "type": "Binary",
+                                        "typeProperties": {
+                                            "location": {
+                                                "type": "AzureBlobFSLocation",
+                                                "fileName": {
+                                                    "value": "@item().name",
+                                                    "type": "Expression"
+                                                },
+                                                "fileSystem": "images"
+                                            }
+                                        },
+                                        "externalReferences": {
+                                            "connection": "108983ef-5fdc-42e0-ab4b-1ecc004ab67f"
+                                        }
+                                    }
+                                },
+                                "sink": {
+                                    "type": "BinarySink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "datasetSettings": {
+                                        "annotations": [],
+                                        "type": "Binary",
+                                        "typeProperties": {
+                                            "location": {
+                                                "type": "AzureBlobFSLocation",
+                                                "fileName": {
+                                                    "value": "@item().name",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": "processed",
+                                                "fileSystem": "images"
+                                            }
+                                        },
+                                        "externalReferences": {
+                                            "connection": "108983ef-5fdc-42e0-ab4b-1ecc004ab67f"
+                                        }
+                                    }
+                                },
+                                "enableStaging": false
+                            }
+                        },
+                        {
+                            "name": "Delete image from image container",
+                            "type": "Delete",
+                            "state": "Inactive",
+                            "onInactiveMarkAs": "Succeeded",
+                            "dependsOn": [
+                                {
+                                    "activity": "Copy data into subdirectory",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                {
+                                    "activity": "bronze_to_silver",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "datasetSettings": {
+                                    "annotations": [],
+                                    "type": "Binary",
+                                    "typeProperties": {
+                                        "location": {
+                                            "type": "AzureBlobFSLocation",
+                                            "fileName": {
+                                                "value": "@item().name",
+                                                "type": "Expression"
+                                            },
+                                            "fileSystem": "images"
+                                        }
+                                    },
+                                    "externalReferences": {
+                                        "connection": "108983ef-5fdc-42e0-ab4b-1ecc004ab67f"
+                                    }
+                                },
+                                "enableLogging": false,
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": false,
+                                    "enablePartitionDiscovery": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Filter only images",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "Get all URLs from directory",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get all URLs from directory').output.childItems",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@or(and(equals(item().type,'File'),endswith(item().name,'.jpg')),and(equals(item().type,'File'),endswith(item().name,'.png')))",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "annotations": [],
+        "lastModifiedByObjectId": "db698898-2170-47ef-88fc-29f390975939",
+        "lastPublishTime": "2024-03-03T20:32:15Z"
+    }
+}
